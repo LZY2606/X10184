@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寄存器铸模</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>寄存器铸模</h1>
+  <nav>
+    <button data-tab="editor" class="active">编辑与校验</button>
+    <button data-tab="layout">位域布局</button>
+    <button data-tab="conflicts">冲突</button>
+    <button data-tab="simulate">读写预演</button>
+    <button data-tab="compare">版本比较</button>
+    <button data-tab="generate">生成代码</button>
+    <button data-tab="history">修订历史</button>
+  </nav>
+</header>
+<main>
+  <section id="editor" class="tab active">
+    <div class="pane-row">
+      <div class="pane">
+        <div class="pane-head">
+          <span>YAML 定义（可编辑）</span>
+          <span>
+            <button id="loadSample">载入示例</button>
+            <button id="analyzeBtn">校验</button>
+            <button id="saveRevision" class="primary">保存为修订</button>
+          </span>
+        </div>
+        <textarea id="yamlInput" spellcheck="false"></textarea>
+      </div>
+      <div class="pane">
+        <div class="pane-head"><span>规范化结果 / 版本</span><span id="metaInfo"></span></div>
+        <pre id="canonicalView" class="code"></pre>
+        <div id="diagnostics"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="layout" class="tab">
+    <div class="pane">
+      <div class="pane-head"><span>寄存器位域（点击块查看）</span>
+        <select id="regSelect"></select>
+      </div>
+      <div id="bitLayout"></div>
+      <div id="fieldDetail" class="detail"></div>
+    </div>
+  </section>
+
+  <section id="conflicts" class="tab">
+    <div class="pane"><div class="pane-head"><span>验证冲突与最短冲突路径</span></div>
+      <div id="conflictList"></div>
+    </div>
+  </section>
+
+  <section id="simulate" class="tab">
+    <div class="pane-row">
+      <div class="pane">
+        <div class="pane-head"><span>操作序列</span>
+          <span>
+            <select id="opType">
+              <option value="write">write</option>
+              <option value="read">read</option>
+              <option value="peek">peek</option>
+            </select>
+            <select id="opReg"></select>
+            <input id="opValue" placeholder="0x1 / 10" size="10">
+            <input id="opWord" placeholder="word" size="5">
+            <button id="addOp">加入</button>
+            <button id="runOps" class="primary">逐步预演</button>
+            <button id="resetOps">清空</button>
+          </span>
+        </div>
+        <table id="opTable"><thead><tr><th>#</th><th>操作</th><th>寄存器</th><th>值</th><th>字</th><th></th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="pane">
+        <div class="pane-head"><span>状态轨迹</span></div>
+        <div id="simTrace"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="compare" class="tab">
+    <div class="pane-row">
+      <div class="pane"><div class="pane-head"><span>版本 A</span>
+        <select id="revA"></select></div><textarea id="yamlA" spellcheck="false"></textarea></div>
+      <div class="pane"><div class="pane-head"><span>版本 B</span>
+        <select id="revB"></select></div><textarea id="yamlB" spellcheck="false"></textarea></div>
+    </div>
+    <div class="pane"><button id="runDiff" class="primary">比较 ABI 与行为</button>
+      <div id="diffView"></div></div>
+  </section>
+
+  <section id="generate" class="tab">
+    <div class="pane">
+      <div class="pane-head"><span>确定性生成物</span>
+        <span>
+          <button id="genBtn" class="primary">生成</button>
+          <button id="dlZip">下载 ZIP</button>
+          <button id="twiceBtn">两次生成比对</button>
+        </span>
+      </div>
+      <div id="genMeta"></div>
+      <div id="genFiles"></div>
+    </div>
+  </section>
+
+  <section id="history" class="tab">
+    <div class="pane"><div class="pane-head"><span>原始定义与修订</span>
+      <button id="refreshHistory">刷新</button></div>
+      <div id="historyView"></div></div>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

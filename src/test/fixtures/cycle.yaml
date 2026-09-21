@@ -1,0 +1,10 @@
+name: cyc
+data_width: 32
+registers:
+  - {name: A, offset: 0x0, fields: [{name: X, bits: 0, access: RW}]}
+  - {name: B, offset: 0x4, fields: [{name: Y, bits: 0, access: RW}]}
+  - {name: C, offset: 0x8, fields: [{name: Z, bits: 0, access: RW}]}
+effects:
+  - {name: a_to_b, trigger: A, when_bits: [0], action: set, target: {register: B, field: Y}}
+  - {name: b_to_c, trigger: B, when_bits: [0], action: set, target: {register: C, field: Z}}
+  - {name: c_to_a, trigger: C, when_bits: [0], action: set, target: {register: A, field: X}}

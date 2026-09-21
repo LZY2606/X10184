@@ -1,0 +1,55 @@
+effects:
+  - target: {field: DONE, register: STATUS}
+    action: set
+    when_bits: [0]
+    trigger: CTRL
+    name: start_done
+    description: 使能写入触发 DONE 置位
+  - source: {field: SEQ, register: BURST}
+    target: {field: V, register: SHADOW}
+    action: latch
+    when_bits: [1]
+    trigger: STATUS
+    name: err_latch
+registers:
+  - fields:
+      - {reset: 1, access: RC, bits: 0, name: DONE}
+      - {reset: 1, access: W1C, bits: 1, name: ERR}
+    offset: 0x04
+    name: STATUS
+  - fields:
+      - {bits: "[47:0]", access: RW, name: PAYLOAD}
+      - {bits: "[63:48]", access: RW, name: SEQ}
+    offset: 0x10
+    width: 64
+    name: BURST
+  - alias_write: clear
+    alias_of: CTRL
+    offset: 0x00
+    name: CLR
+    description: 写一清零原子入口
+  - fields:
+      - {access: RW, bits: "[7:0]", name: V}
+    lock: {bit: 0, register: LOCK}
+    offset: 0x0C
+    name: SHADOW
+  - fields:
+      - {access: RW, bits: 0, reset: 0, name: LOCKED}
+    offset: 0x08
+    name: LOCK
+  - alias_write: set
+    alias_of: CTRL
+    offset: 0x00
+    name: SET
+    description: 写一置位原子入口
+  - fields:
+      - {description: 使能, reset: 0, access: RW, bits: 0, name: ENABLE}
+      - {access: RESERVED, bits: "[7:4]", name: RSVD}
+    reset: 0x0
+    description: 控制寄存器
+    offset: 0x00
+    name: CTRL
+endianness: little
+data_width: 32
+description: sample
+name: gpio

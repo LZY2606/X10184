@@ -1,0 +1,42 @@
+name: gpio
+description: sample
+data_width: 32
+endianness: little
+registers:
+  - name: CTRL
+    offset: 0x00
+    fields:
+      - {name: ENABLE, bits: 0, access: RW}
+      - {name: RSVD, bits: "[7:4]", access: RESERVED}
+  - name: SET
+    offset: 0x00
+    alias_of: CTRL
+    alias_write: set
+  - name: CLR
+    offset: 0x00
+    alias_of: CTRL
+    alias_write: clear
+  - name: STATUS
+    offset: 0x04
+    fields:
+      - {name: DONE, bits: 0, access: RC, reset: 1}
+      - {name: ERR, bits: 1, access: W1C, reset: 1}
+  - name: LOCK
+    offset: 0x08
+    fields:
+      - {name: LOCKED, bits: 0, access: RW}
+  - name: SHADOW
+    offset: 0x0C
+    lock: {register: LOCK, bit: 0}
+    fields:
+      - {name: V, bits: "[7:0]", access: RW}
+  - name: BURST
+    offset: 0x10
+    width: 64
+    fields:
+      - {name: PAYLOAD, bits: "[47:0]", access: RW}
+      - {name: SEQ, bits: "[63:48]", access: RW}
+effects:
+  - {name: start_done, trigger: CTRL, when_bits: [0], action: set, target: {register: STATUS, field: DONE}}
+  - {name: err_latch, trigger: STATUS, when_bits: [1], action: latch,
+     target: {register: SHADOW, field: V}, source: {register: BURST, field: SEQ}}
