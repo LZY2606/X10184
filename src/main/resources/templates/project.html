@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>寄存器铸模 - 项目</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><h1>寄存器铸模</h1><a href="/">← 项目列表</a><span th:text="${project.name}">p</span></header>
+<main>
+<div class="panel">
+  <h2>修订历史（原始 YAML 逐版保留）</h2>
+  <table>
+    <tr><th>版本</th><th>指纹</th><th>说明</th><th>时间</th><th></th></tr>
+    <tr th:each="r : ${revisions}">
+      <td><a th:href="@{/projects/{id}/revisions/{v}(id=${project.id}, v=${r.version})}" th:text="${r.version}">1</a></td>
+      <td th:text="${#strings.substring(r.fingerprint,0,12)}">fp</td>
+      <td th:text="${r.message}">msg</td>
+      <td th:text="${r.created}">-</td>
+      <td><a th:href="@{/projects/{id}/diff(id=${project.id})}">比较</a></td>
+    </tr>
+  </table>
+</div>
+<div class="panel">
+  <h2>提交新修订</h2>
+  <textarea id="yaml" rows="14"></textarea>
+  <p><input id="msg" placeholder="修订说明" size="40"> <button onclick="submitRev()">提交修订</button></p>
+  <pre id="result"></pre>
+</div>
+</main>
+<script th:inline="javascript">
+const projectId = [[${project.id}]];
+const latestYaml = [[${revisions.isEmpty() ? '' : revisions.get(revisions.size()-1).get('yaml')}]];
+document.getElementById('yaml').value = latestYaml;
+async function submitRev() {
+  const body = { yaml: document.getElementById('yaml').value, message: document.getElementById('msg').value };
+  const r = await fetch('/api/projects/' + projectId + '/revisions', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (r.ok) { location.href = '/projects/' + projectId + '/revisions/' + j.version; }
+  else { document.getElementById('result').textContent = '失败: ' + (j.message || r.statusText); }
+}
+</script>
+</body>
+</html>

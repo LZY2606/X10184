@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>寄存器铸模 - 修订</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><h1>寄存器铸模</h1><a th:href="@{/projects/{id}(id=${project.id})}">← 项目</a>
+<span th:text="${project.name} + ' @ rev ' + ${revision.version}">r</span></header>
+<main>
+<div class="tabs">
+  <a href="#" class="active" onclick="showTab('layout',this);return false;">位域布局</a>
+  <a href="#" onclick="showTab('conflicts',this);return false;">冲突</a>
+  <a href="#" onclick="showTab('sim',this);return false;">模拟</a>
+  <a href="#" onclick="showTab('gen',this);return false;">代码生成</a>
+  <a th:href="@{/projects/{id}/diff(id=${project.id})}">版本比较</a>
+</div>
+
+<div id="tab-layout" class="panel">
+  <h2>位域布局（点击位查看字段）</h2>
+  <div class="legend">
+    <span class="acc-RW">RW</span><span class="acc-RO">RO</span><span class="acc-WO">WO</span>
+    <span class="acc-W1C">W1C</span><span class="acc-W1S">W1S</span><span class="acc-RC">RC</span>
+    <span class="acc-RESERVED">保留</span>
+  </div>
+  <div id="layout"></div>
+  <div class="panel" id="fieldDetail" style="display:none"></div>
+</div>
+
+<div id="tab-conflicts" class="panel" style="display:none">
+  <h2>验证冲突</h2>
+  <div id="conflictList">加载中…</div>
+</div>
+
+<div id="tab-sim" class="panel" style="display:none">
+  <h2>读写预演（逐步观察状态）</h2>
+  <p class="evt">每行一条：<code>write REG 0x值</code> / <code>read REG</code> / <code>preview REG</code>（调试预览，不消费 RC）</p>
+  <textarea id="script" rows="6">write LOCK 0x1
+write CTRL 0x1
+write STATUS 0x2
+read STATUS
+preview STATUS
+write GPIO_SET 0x5
+write GPIO_CLR 0x1
+read GPIO</textarea>
+  <p><button onclick="runSim()">运行</button></p>
+  <div class="stepbar" id="stepbar" style="display:none">
+    <button class="ghost" onclick="stepTo(curStep-1)">◀</button>
+    <input type="range" id="stepSlider" min="0" value="0" oninput="stepTo(+this.value)">
+    <button class="ghost" onclick="stepTo(curStep+1)">▶</button>
+    <span id="stepLabel"></span>
+  </div>
+  <div id="stepView"></div>
+</div>
+
+<div id="tab-gen" class="panel" style="display:none">
+  <h2>生成 C / Rust / 文档（确定性输出，原子替换）</h2>
+  <p><button onclick="generate()">生成</button> <span id="genStatus"></span></p>
+  <div id="genFiles"></div>
+  <pre id="genContent"></pre>
+</div>
+</main>
+<script th:inline="javascript">
+const projectId = [[${project.id}]];
+const rev = [[${revision.version}]];
+let model = null, steps = [], curStep = 0;
+
+function showTab(name, el) {
+  for (const t of ['layout','conflicts','sim','gen']) document.getElementById('tab-'+t).style.display = 'none';
+  document.getElementById('tab-'+name).style.display = 'block';
+  document.querySelectorAll('.tabs a').forEach(a => a.classList.remove('active'));
+  el.classList.add('active');
+  if (name === 'conflicts') loadConflicts();
+}
+
+async function loadModel() {
+  const r = await fetch(`/api/projects/${projectId}/revisions/${rev}/model`);
+  model = await r.json();
+  renderLayout();
+}
+
+function renderLayout() {
+  const host = document.getElementById('layout');
+  host.innerHTML = '';
+  for (const reg of model.registers) {
+    const block = document.createElement('div');
+    block.className = 'regblock';
+    const alias = reg.aliasOf ? ` → alias of ${reg.aliasOf} (${reg.semantic})` : '';
+    const lock = reg.lockedBy ? ` 🔒 ${reg.lockedBy.register}.${reg.lockedBy.field}==${reg.lockedBy.openValue}` : '';
+    block.innerHTML = `<div class="regtitle">${reg.name} <span class="meta">@0x${reg.address.toString(16)} w${reg.width} reset 0x${reg.reset.toString(16)}${alias}${lock}</span></div>`;
+    const grid = document.createElement('div');
+    grid.className = 'bitgrid';
+    grid.style.gridTemplateColumns = `repeat(${Math.min(reg.width,32)}, 26px)`;
+    const bitField = new Array(reg.width).fill(null);
+    for (const f of reg.fields) for (let i = 0; i < f.width; i++) bitField[f.offset + i] = f;
+    for (let row = reg.width - 1; row >= 0; row -= 32) {
+      for (let b = Math.min(row, 31); b >= Math.max(row - 31, 0); b--) {
+        const f = bitField[b];
+        const cell = document.createElement('div');
+        if (f) {
+          cell.className = 'bit acc-' + f.access;
+          cell.textContent = f.name.length > 4 ? f.name.slice(0,4) : f.name;
+          cell.title = `${reg.name}.${f.name} [${f.offset}+${f.width}] ${f.access}`;
+          cell.onclick = () => showField(reg, f, cell);
+        } else {
+          cell.className = 'bit unused';
+          cell.textContent = b;
+        }
+        grid.appendChild(cell);
+      }
+    }
+    block.appendChild(grid);
+    host.appendChild(block);
+  }
+}
+
+function showField(reg, f, cell) {
+  document.querySelectorAll('.bit.sel').forEach(b => b.classList.remove('sel'));
+  document.querySelectorAll('.bit').forEach(b => { if (b.title.startsWith(reg.name + '.' + f.name + ' ')) b.classList.add('sel'); });
+  const d = document.getElementById('fieldDetail');
+  d.style.display = 'block';
+  const fx = (f.sideEffects || []).map(s => `${s.action} ${s.targetRegister}.${s.targetField}`).join('; ');
+  d.innerHTML = `<h3>${reg.name}.${f.name}</h3>
+    <table>
+    <tr><th>位</th><td>[${f.offset} + ${f.width}]</td></tr>
+    <tr><th>访问</th><td>${f.access}</td></tr>
+    <tr><th>掩码</th><td>REGMOLD_${reg.name.toUpperCase()}_${f.name.toUpperCase()}_MASK</td></tr>
+    <tr><th>副作用</th><td>${fx || '无'}</td></tr>
+    <tr><th>说明</th><td>${f.doc || ''}</td></tr></table>`;
+}
+
+async function loadConflicts() {
+  const r = await fetch(`/api/projects/${projectId}/revisions/${rev}/conflicts`);
+  const list = await r.json();
+  const host = document.getElementById('conflictList');
+  if (!list.length) { host.innerHTML = '<p class="ok">✓ 无冲突：位域不重叠，副作用链一致</p>'; return; }
+  host.innerHTML = list.map(c =>
+    `<div class="conflict"><span class="code">[${c.code}]</span> ${c.message}` +
+    (c.path && c.path.length ? `<br>最短冲突路径: <b>${c.path.join(' → ')}</b>` : '') + '</div>').join('');
+}
+
+async function runSim() {
+  const r = await fetch(`/api/projects/${projectId}/revisions/${rev}/simulate`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ script: document.getElementById('script').value }) });
+  steps = await r.json();
+  if (!steps.length) return;
+  document.getElementById('stepbar').style.display = 'flex';
+  const slider = document.getElementById('stepSlider');
+  slider.max = steps.length - 1;
+  stepTo(0);
+}
+
+function stepTo(i) {
+  curStep = Math.max(0, Math.min(steps.length - 1, i));
+  document.getElementById('stepSlider').value = curStep;
+  const s = steps[curStep];
+  document.getElementById('stepLabel').textContent = `步骤 ${curStep+1}/${steps.length}`;
+  const rows = Object.entries(s.stateAfter).map(([k,v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('');
+  document.getElementById('stepView').innerHTML =
+    `<h3>#${s.index} ${s.op} ${s.register} ${s.value || ''}</h3>
+     <div>${s.events.map(e => `<div class="evt ${/BLOCK|preserv|cycle/.test(e) ? 'warn' : ''}">• ${e}</div>`).join('')}</div>
+     <table class="statetable"><tr><th>寄存器</th><th>状态</th></tr>${rows}</table>`;
+}
+
+async function generate() {
+  const r = await fetch(`/api/projects/${projectId}/revisions/${rev}/generate`, { method: 'POST' });
+  const j = await r.json();
+  document.getElementById('genStatus').textContent = '指纹 ' + j.fingerprint.slice(0,12) + ' → ' + j.dir;
+  document.getElementById('genFiles').innerHTML = j.files.map(f =>
+    `<p><a href="#" onclick="showFile('${f}');return false;">${f}</a></p>`).join('');
+}
+
+async function showFile(path) {
+  const r = await fetch(`/api/projects/${projectId}/revisions/${rev}/artifact?path=` + encodeURIComponent(path));
+  document.getElementById('genContent').textContent = await r.text();
+}
+
+loadModel();
+</script>
+</body>
+</html>

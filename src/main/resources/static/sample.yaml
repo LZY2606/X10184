@@ -1,0 +1,78 @@
+name: demo-chip
+endianness: little
+registers:
+  - name: STATUS
+    address: 0x00
+    width: 32
+    reset: 0x00000000
+    doc: Interrupt and error status.
+    fields:
+      - name: READY
+        offset: 0
+        width: 1
+        access: ro
+      - name: ERR
+        offset: 1
+        width: 1
+        access: w1c
+        sideEffects:
+          - target: CTRL.STOP
+            action: set
+      - name: COUNT
+        offset: 8
+        width: 8
+        access: rc
+      - name: RSVD
+        offset: 16
+        width: 4
+        access: reserved
+  - name: CTRL
+    address: 0x04
+    width: 32
+    reset: 0x0
+    lockedBy: { register: LOCK, field: KEY_OK, openValue: 1 }
+    fields:
+      - name: ENABLE
+        offset: 0
+        width: 1
+        access: rw
+      - name: STOP
+        offset: 1
+        width: 1
+        access: rw
+  - name: LOCK
+    address: 0x08
+    width: 32
+    fields:
+      - name: KEY_OK
+        offset: 0
+        width: 1
+        access: rw
+  - name: COUNTER64
+    address: 0x10
+    width: 64
+    reset: 0x0
+    wordOrder: hi-first
+    fields:
+      - name: VALUE
+        offset: 28
+        width: 12
+        access: rw
+  - name: GPIO
+    address: 0x20
+    width: 32
+    fields:
+      - name: PIN
+        offset: 0
+        width: 8
+        access: rw
+  - name: GPIO_SET
+    address: 0x20
+    width: 32
+    aliasOf: GPIO
+    semantic: w1s
+  - name: GPIO_CLR
+    address: 0x20
+    width: 32
+    aliasOf: GPIO
+    semantic: w1c

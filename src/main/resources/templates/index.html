@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>寄存器铸模</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><h1>寄存器铸模</h1><span>register mold — 可审阅、可生成代码的寄存器模型</span></header>
+<main>
+<div class="panel">
+  <h2>导入 YAML 定义</h2>
+  <p><input id="pname" placeholder="项目名（留空取 YAML 中的 name）" size="40">
+     <button class="ghost" onclick="loadSample()">载入示例</button>
+     <button onclick="importYaml()">导入</button></p>
+  <textarea id="yaml" rows="14" placeholder="name: my-chip&#10;registers: ..."></textarea>
+  <pre id="importResult"></pre>
+</div>
+<div class="panel">
+  <h2>项目</h2>
+  <table>
+    <tr><th>ID</th><th>名称</th><th>修订数</th><th>创建时间</th></tr>
+    <tr th:each="p : ${projects}">
+      <td><a th:href="@{/projects/{id}(id=${p.id})}" th:text="${p.id}">1</a></td>
+      <td th:text="${p.name}">demo</td>
+      <td th:text="${p.revisions}">0</td>
+      <td th:text="${p.created}">-</td>
+    </tr>
+  </table>
+</div>
+</main>
+<script>
+async function loadSample() {
+  const r = await fetch('/sample.yaml');
+  document.getElementById('yaml').value = await r.text();
+}
+async function importYaml() {
+  const body = { name: document.getElementById('pname').value, yaml: document.getElementById('yaml').value, message: 'import' };
+  const r = await fetch('/api/projects', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (r.ok) {
+    document.getElementById('importResult').textContent =
+      '已导入: project ' + j.projectId + ' revision ' + j.version +
+      (j.conflicts.length ? '\n冲突:\n' + j.conflicts.map(c => '  [' + c.code + '] ' + c.message).join('\n') : '\n无冲突');
+    setTimeout(() => location.href = '/projects/' + j.projectId, 600);
+  } else {
+    document.getElementById('importResult').textContent = '导入失败: ' + (j.message || r.statusText);
+  }
+}
+</script>
+</body>
+</html>

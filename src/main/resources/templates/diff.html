@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>寄存器铸模 - 版本比较</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><h1>寄存器铸模</h1><a th:href="@{/projects/{id}(id=${project.id})}">← 项目</a><span>ABI / 行为差异</span></header>
+<main>
+<div class="panel">
+  <h2>比较两个修订</h2>
+  <p>
+    <select id="selA"></select> → <select id="selB"></select>
+    <button onclick="runDiff()">比较</button>
+  </p>
+  <div id="diffOut"></div>
+</div>
+</main>
+<script th:inline="javascript">
+const projectId = [[${project.id}]];
+const revisions = [[${revisions}]];
+const preA = [[${a}]], preB = [[${b}]];
+const selA = document.getElementById('selA'), selB = document.getElementById('selB');
+for (const r of revisions) {
+  selA.add(new Option('rev ' + r.version, r.version));
+  selB.add(new Option('rev ' + r.version, r.version));
+}
+if (preA) selA.value = preA; if (preB) selB.value = preB;
+if (!preA && revisions.length) selA.value = revisions[0].version;
+if (!preB && revisions.length) selB.value = revisions[revisions.length-1].version;
+async function runDiff() {
+  const r = await fetch(`/api/projects/${projectId}/diff?a=${selA.value}&b=${selB.value}`);
+  const list = await r.json();
+  const host = document.getElementById('diffOut');
+  if (!list.length) { host.innerHTML = '<p class="ok">✓ 两个版本的生成 API 完全一致</p>'; return; }
+  host.innerHTML = '<table><tr><th>类别</th><th>变化</th><th>受影响符号</th><th>详情</th></tr>' +
+    list.map(c => `<tr><td class="diff-${c.category}">${c.category}</td><td>${c.kind}</td><td><code>${c.symbol}</code></td><td>${c.detail}</td></tr>`).join('') +
+    '</table>';
+}
+if (revisions.length >= 1) runDiff();
+</script>
+</body>
+</html>
