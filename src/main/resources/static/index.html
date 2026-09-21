@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>寄存器铸模</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>寄存器铸模</h1>
+  <div class="sub">Register Mold · 可审阅、可生成代码的寄存器模型</div>
+</header>
+
+<nav class="tabs">
+  <button data-tab="edit" class="active">编辑 / 导入</button>
+  <button data-tab="layout">位域布局</button>
+  <button data-tab="conflicts">校验 / 冲突</button>
+  <button data-tab="sim">读写预演</button>
+  <button data-tab="diff">版本比较</button>
+  <button data-tab="gen">生成 C / Rust</button>
+  <button data-tab="revisions">修订历史</button>
+</nav>
+
+<main>
+  <section id="tab-edit" class="tab active">
+    <div class="toolbar">
+      <button id="btn-sample">载入示例</button>
+      <button id="btn-validate">校验</button>
+      <button id="btn-import" class="primary">导入为修订</button>
+      <span id="edit-status" class="status"></span>
+    </div>
+    <textarea id="yaml-input" spellcheck="false" placeholder="在此粘贴寄存器 YAML…"></textarea>
+    <div id="validate-panel" class="panel hidden"></div>
+  </section>
+
+  <section id="tab-layout" class="tab">
+    <div class="toolbar">
+      <label>修订：<select id="layout-revision"></select></label>
+      <span id="layout-meta" class="status"></span>
+    </div>
+    <div id="layout-view"></div>
+    <div id="field-detail" class="panel hidden"></div>
+  </section>
+
+  <section id="tab-conflicts" class="tab">
+    <div class="toolbar">
+      <label>修订：<select id="conflict-revision"></select></label>
+    </div>
+    <div id="conflict-view"></div>
+  </section>
+
+  <section id="tab-sim" class="tab">
+    <div class="toolbar">
+      <label>修订：<select id="sim-revision"></select></label>
+      <button id="sim-start">开始预演会话</button>
+      <button id="sim-reset">复位</button>
+      <span id="sim-session" class="status"></span>
+    </div>
+    <div class="sim-grid">
+      <div>
+        <h3>操作</h3>
+        <div class="op-row">
+          <select id="sim-op">
+            <option value="write">write（写）</option>
+            <option value="read">read（读，消费 RC/锁存）</option>
+            <option value="peek">peek（预览，不消费）</option>
+            <option value="atomic">atomic set/clear</option>
+          </select>
+          <select id="sim-reg"></select>
+        </div>
+        <div class="op-row">
+          <label>字索引（多字）<input id="sim-word" type="number" value="0" min="0" style="width:5em"></label>
+        </div>
+        <div class="op-row">
+          <label>值 / setMask <input id="sim-value" value="0x0"></label>
+        </div>
+        <div class="op-row">
+          <label>clearMask（atomic）<input id="sim-clear" value="0x0"></label>
+        </div>
+        <button id="sim-step" class="primary">单步执行</button>
+      </div>
+      <div>
+        <h3>寄存器状态</h3>
+        <div id="sim-state"></div>
+      </div>
+    </div>
+    <h3>逐步事件</h3>
+    <div id="sim-log"></div>
+  </section>
+
+  <section id="tab-diff" class="tab">
+    <div class="toolbar">
+      <label>旧修订 <select id="diff-a"></select></label>
+      <label>新修订 <select id="diff-b"></select></label>
+      <button id="diff-run" class="primary">比较 ABI 与行为</button>
+    </div>
+    <div id="diff-view"></div>
+  </section>
+
+  <section id="tab-gen" class="tab">
+    <div class="toolbar">
+      <label>修订：<select id="gen-revision"></select></label>
+      <label>安装目录（可选）<input id="gen-dir" placeholder="留空仅在线预览，不写盘"></label>
+      <button id="gen-run" class="primary">生成</button>
+    </div>
+    <div id="gen-view"></div>
+  </section>
+
+  <section id="tab-revisions" class="tab">
+    <div class="toolbar"><button id="rev-refresh">刷新</button></div>
+    <table id="rev-table">
+      <thead><tr><th>#</th><th>名称</th><th>版本</th><th>SHA-256</th><th>时间</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </section>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
