@@ -1,0 +1,125 @@
+name: demo_soc
+endianness: little
+addressSpaces:
+  - name: APB
+    base: 0x40001000
+    registers:
+      - name: CTRL
+        address: 0x00
+        width: 32
+        reset: 0x00000001
+        description: 控制寄存器
+        fields:
+          - name: ENABLE
+            lsb: 0
+            msb: 0
+            access: RW
+            description: 模块使能
+          - name: START
+            lsb: 1
+            msb: 1
+            access: W1S
+            description: 写一启动
+          - name: STOP
+            lsb: 2
+            msb: 2
+            access: W1C
+            description: 写一停止
+          - name: RESERVED_3_7
+            lsb: 3
+            msb: 7
+            access: RESERVED
+          - name: MODE
+            lsb: 8
+            msb: 9
+            access: RW
+        sideEffects:
+          - triggerField: ENABLE
+            target: STATUS.RUNNING
+            action: SET
+            description: 使能时硬件置位运行标志
+      - name: CTRL_ALIAS
+        address: 0x00
+        aliasOf: CTRL
+        description: 控制寄存器的只写语义别名
+        fields:
+          - name: ENABLE
+            lsb: 0
+            msb: 0
+            access: RW
+          - name: START
+            lsb: 1
+            msb: 1
+            access: W1S
+          - name: STOP
+            lsb: 2
+            msb: 2
+            access: W1C
+          - name: RESERVED_3_7
+            lsb: 3
+            msb: 7
+            access: RESERVED
+          - name: MODE
+            lsb: 8
+            msb: 9
+            access: RO
+      - name: STATUS
+        address: 0x04
+        width: 32
+        reset: 0x0
+        description: 状态寄存器
+        lockedBy: LOCKCTL.KEY
+        unlockValue: 0
+        fields:
+          - name: RUNNING
+            lsb: 0
+            msb: 0
+            access: RC
+            description: 运行中，读后清零
+          - name: ERRCNT
+            lsb: 8
+            msb: 15
+            access: RC
+          - name: RESERVED_REST
+            lsb: 1
+            msb: 7
+            access: RESERVED
+          - name: HWID
+            lsb: 16
+            msb: 31
+            access: RO
+      - name: COUNTER64
+        address: 0x08
+        width: 64
+        reset: 0x0000000100000000
+        wordOrder: LOW_FIRST
+        description: 64 位跨字计数器
+        fields:
+          - name: LOW_PART
+            lsb: 0
+            msb: 27
+            access: RO
+          - name: BRIDGE
+            lsb: 28
+            msb: 39
+            access: RC
+            description: 跨第 31/32 位的读清零位域
+          - name: HIGH_PART
+            lsb: 40
+            msb: 63
+            access: RO
+      - name: LOCKCTL
+        address: 0x10
+        width: 32
+        reset: 0x1
+        description: 锁存控制
+        fields:
+          - name: KEY
+            lsb: 0
+            msb: 7
+            access: RW
+            description: 写入 unlockValue 解锁受保护寄存器
+          - name: RESERVED
+            lsb: 8
+            msb: 31
+            access: RESERVED

@@ -1,0 +1,20 @@
+endianness: little
+addressSpaces:
+  - registers:
+      - fields:
+          - {access: RW, bit: 0, name: F0}
+          - {access: W1C, bit: 1, name: F1}
+        reset: 0
+        width: 32
+        address: 0x00
+        name: A_REG
+      - fields:
+          - {access: RO, lsb: 1, msb: 2, name: Y}
+          - {access: RW, bit: 0, name: X}
+        reset: 0
+        width: 32
+        address: 0x04
+        name: B_REG
+    base: 0x1000
+    name: APB
+name: order_demo

@@ -1,0 +1,110 @@
+name: fixture_chip
+endianness: little
+addressSpaces:
+  - name: APB
+    base: 0x50000000
+    registers:
+      - name: CTRL
+        address: 0x00
+        width: 32
+        reset: 0x0
+        description: 控制寄存器
+        fields:
+          - name: EN
+            bit: 0
+            access: RW
+          - name: GO
+            bit: 1
+            access: W1S
+          - name: DONE
+            bit: 2
+            access: W1C
+          - name: RSV
+            lsb: 3
+            msb: 7
+            access: RESERVED
+          - name: MODE
+            lsb: 8
+            msb: 9
+            access: RW
+        sideEffects:
+          - triggerField: EN
+            target: STAT.ACT
+            action: SET
+            description: EN 置位时激活 STAT.ACT
+      - name: CTRL_ALIAS
+        address: 0x00
+        width: 32
+        aliasOf: CTRL
+        fields:
+          - name: EN
+            bit: 0
+            access: RW
+          - name: GO
+            bit: 1
+            access: W1S
+          - name: DONE
+            bit: 2
+            access: W1C
+          - name: RSV
+            lsb: 3
+            msb: 7
+            access: RESERVED
+          - name: MODE
+            lsb: 8
+            msb: 9
+            access: RO
+      - name: STAT
+        address: 0x04
+        width: 32
+        reset: 0x0
+        fields:
+          - name: ACT
+            bit: 0
+            access: RC
+          - name: RSV2
+            lsb: 1
+            msb: 31
+            access: RESERVED
+      - name: TMR
+        address: 0x08
+        width: 64
+        reset: 0x100000000
+        wordOrder: LOW_FIRST
+        fields:
+          - name: LO
+            lsb: 0
+            msb: 27
+            access: RO
+          - name: CROSS
+            lsb: 28
+            msb: 39
+            access: RC
+          - name: HI
+            lsb: 40
+            msb: 63
+            access: RO
+      - name: LOCK
+        address: 0x10
+        width: 32
+        reset: 0x1
+        fields:
+          - name: KEY
+            lsb: 0
+            msb: 7
+            access: RW
+          - name: R
+            lsb: 8
+            msb: 31
+            access: RESERVED
+      - name: SECRET
+        address: 0x14
+        width: 32
+        reset: 0x0
+        lockedBy: LOCK.KEY
+        unlockValue: 0
+        fields:
+          - name: DATA
+            lsb: 0
+            msb: 31
+            access: RW
