@@ -1,0 +1,75 @@
+name: demo_soc
+version: "1.2.0"
+address_space:
+  bits: 32
+  word_bits: 32
+  endian: little
+registers:
+  - name: CTRL
+    address: 0x1000
+    width: 32
+    set_alias: CTRLSET
+    clr_alias: CTRLCLR
+    fields:
+      - name: ENABLE
+        bits: 0
+        access: rw
+        effects:
+          - on_write:
+              set: STATUS.RUNNING
+      - name: SOFT_RESET
+        bits: 1
+        access: w1
+        effects:
+          - on_write:
+              clear: STATUS.EVENT
+      - name: RSVD
+        bits: "31:8"
+        access: reserved
+  - name: CTRLSET
+    address: 0x1004
+    width: 32
+    alias_of: CTRL
+  - name: CTRLCLR
+    address: 0x1008
+    width: 32
+    alias_of: CTRL
+  - name: STATUS
+    address: 0x1010
+    width: 32
+    fields:
+      - name: RUNNING
+        bits: 0
+        access: ro
+      - name: EVENT
+        bits: 16
+        access: rc
+      - name: RSVD
+        bits: "31:17"
+        access: reserved
+  - name: HWCFG
+    address: 0x1020
+    width: 64
+    read_order: low_first
+    fields:
+      - name: CROSS
+        bits: "40:24"
+        access: rw
+      - name: RSVD
+        bits: "63:41"
+        access: reserved
+  - name: LOCK
+    address: 0x1030
+    width: 32
+    fields:
+      - name: LOCKEN
+        bits: 0
+        access: rw
+  - name: CALIB
+    address: 0x1040
+    width: 32
+    locked_by: LOCK.LOCKEN
+    fields:
+      - name: GAIN
+        bits: "7:0"
+        access: rw

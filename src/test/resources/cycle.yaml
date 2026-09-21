@@ -1,0 +1,19 @@
+name: cyc
+version: "1"
+registers:
+  - name: A
+    address: 0x0
+    fields:
+      - name: F1
+        bits: 0
+        access: rw
+        effects:
+          - on_write: { set: B.F2 }
+  - name: B
+    address: 0x4
+    fields:
+      - name: F2
+        bits: 0
+        access: rw
+        effects:
+          - on_write: { clear: A.F1 }

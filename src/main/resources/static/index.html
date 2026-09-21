@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>寄存器铸模</title>
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<header>
+  <h1>寄存器铸模</h1>
+  <span class="sub">Register Forge · 模型版本可溯源的寄存器访问层</span>
+</header>
+
+<nav class="tabs">
+  <button data-tab="editor" class="active">模型编辑</button>
+  <button data-tab="layout">位域布局</button>
+  <button data-tab="sim">读写预演</button>
+  <button data-tab="diff">版本比较</button>
+  <button data-tab="gen">生成物</button>
+</nav>
+
+<main>
+  <!-- 模型编辑 -->
+  <section id="tab-editor" class="tab active">
+    <div class="toolbar">
+      <button id="btn-validate">校验</button>
+      <button id="btn-import" class="primary">导入为新修订</button>
+      <button id="btn-sample">载入示例</button>
+      <select id="rev-select" title="已保存修订"></select>
+    </div>
+    <div class="split">
+      <textarea id="yaml" spellcheck="false" placeholder="在此粘贴寄存器 YAML…"></textarea>
+      <div id="issues" class="panel"></div>
+    </div>
+  </section>
+
+  <!-- 位域布局 -->
+  <section id="tab-layout" class="tab">
+    <div class="toolbar">
+      <select id="layout-rev"></select>
+      <span class="hint">点击色块查看位域语义；跨字位域会标注字边界。</span>
+    </div>
+    <div id="layout"></div>
+    <pre id="field-detail" class="panel detail"></pre>
+  </section>
+
+  <!-- 读写预演 -->
+  <section id="tab-sim" class="tab">
+    <div class="toolbar">
+      <select id="sim-rev"></select>
+      <button id="sim-start">开始会话</button>
+      <button id="sim-reset">复位</button>
+    </div>
+    <div class="toolbar">
+      <select id="sim-type">
+        <option value="write">写 write</option>
+        <option value="atomic-set">原子置位 atomic-set</option>
+        <option value="atomic-clear">原子清零 atomic-clear</option>
+        <option value="read-preview">预览读（不消费 RC）</option>
+        <option value="read-consume">读并清零（消费 RC）</option>
+      </select>
+      <select id="sim-target"></select>
+      <input id="sim-value" placeholder="0x.. / 十进制" value="0x0">
+      <button id="sim-step" class="primary">单步执行</button>
+    </div>
+    <div class="split">
+      <div id="sim-events" class="panel"></div>
+      <pre id="sim-state" class="panel detail"></pre>
+    </div>
+  </section>
+
+  <!-- 版本比较 -->
+  <section id="tab-diff" class="tab">
+    <div class="toolbar">
+      <select id="diff-a"></select>
+      <span>⟶</span>
+      <select id="diff-b"></select>
+      <button id="diff-run" class="primary">比较 ABI 与行为</button>
+    </div>
+    <div id="diff-out" class="panel"></div>
+  </section>
+
+  <!-- 生成物 -->
+  <section id="tab-gen" class="tab">
+    <div class="toolbar">
+      <select id="gen-rev"></select>
+      <span class="hint">每个掩码/写序列头部均可追溯到模型版本与内容哈希。</span>
+    </div>
+    <div class="split">
+      <ul id="gen-files"></ul>
+      <pre id="gen-content" class="panel detail"></pre>
+    </div>
+  </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
